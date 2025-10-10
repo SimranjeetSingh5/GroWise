@@ -10,13 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
     steps:
-      - name: Get commits payload safely
-        id: commits
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Save commits payload to file
         run: |
-          # Base64 encode to safely handle quotes/newlines in commit messages
-          COMMITS_BASE64=$(echo '${{ toJson(github.event.commits) }}' | base64 | tr -d '\n')
-          echo "COMMITS_BASE64=$COMMITS_BASE64" >> $GITHUB_ENV
+          echo '${{ toJson(github.event.commits) }}' > commits.json
+          echo "Saved commits payload to commits.json"
 
       - name: Parse commits and update Notion
         env:
@@ -26,11 +28,11 @@ jobs:
         run: |
           set -e
 
-          # Decode commits JSON
-          COMMITS=$(echo "$COMMITS_BASE64" | base64 --decode)
+          # Read commits from file
+          COMMITS=$(cat commits.json)
 
           echo "=========================================="
-          echo "🔧 CONFIGURATION CHECK"
+          echo "🔧 CONFIG CHECK"
           echo "Database ID: $NOTION_DATABASE_ID"
           echo "API Version: $NOTION_API_VERSION"
           echo "Token configured: $([ -n "$NOTION_TOKEN" ] && echo 'YES' || echo 'NO')"
@@ -54,6 +56,7 @@ jobs:
             echo "📝 Commit Message: $MSG"
             echo "🔗 Commit URL: $URL"
 
+            # Extract GW-* keys
             KEYS=$(echo "$MSG" | grep -oE 'GW-[0-9]+' | sort -u)
             if [ -z "$KEYS" ]; then
               echo "⏭️ No GW-* keys found. Skipping commit."
@@ -77,7 +80,7 @@ jobs:
               PAGE_ID=""
               RESULTS=$(echo "$QUERY_RESPONSE" | jq -c '.results[]')
 
-              # Loop over pages to find matching key
+              # Loop over pages to find matching "ID" property
               for PAGE in $RESULTS; do
                 PAGE_KEY=$(echo "$PAGE" | jq -r '.properties["ID"].rich_text[0].plain_text // empty')
                 if [ "$PAGE_KEY" = "$KEY" ]; then
@@ -100,7 +103,7 @@ jobs:
 
               EXISTING=$(echo "$CURRENT_PAGE" | jq -c '.properties["Github Commit link"].rich_text // []')
 
-              # Create new line
+              # Create new line for commit
               NEW_LINE=$(jq -nc --arg url "$URL" --arg msg "$MSG" '{
                 type: "text",
                 text: { content: $msg, link: { url: $url } }
@@ -114,7 +117,7 @@ jobs:
                 UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW_LINE" '. + [$new]')
               fi
 
-              # Update page
+              # Update the Notion page
               UPDATE_PAYLOAD=$(jq -n --argjson rt "$UPDATED" '{
                 properties: {
                   "Github Commit link": { rich_text: $rt }
