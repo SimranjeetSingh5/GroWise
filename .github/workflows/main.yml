@@ -23,17 +23,59 @@ jobs:
           NOTION_API_VERSION: ${{ secrets.NOTION_API_VERSION || '2022-06-28' }}
           COMMITS: ${{ steps.commits.outputs.COMMITS }}
         run: |
+          set -e
+          
+          echo "=========================================="
+          echo "🔧 CONFIGURATION CHECK"
+          echo "=========================================="
+          echo "Database ID: $NOTION_DATABASE_ID"
+          echo "API Version: $NOTION_API_VERSION"
+          echo "Token configured: $([ -n "$NOTION_TOKEN" ] && echo 'YES' || echo 'NO')"
+          echo ""
+          
+          # Validate required secrets
+          if [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DATABASE_ID" ]; then
+            echo "❌ ERROR: NOTION_TOKEN or NOTION_DATABASE_ID not set"
+            exit 1
+          fi
+          
+          echo "=========================================="
+          echo "📦 COMMITS PAYLOAD"
+          echo "=========================================="
+          echo "$COMMITS" | jq '.'
+          echo ""
+          
+          echo "=========================================="
+          echo "🔄 PROCESSING COMMITS"
+          echo "=========================================="
+          
           echo "$COMMITS" | jq -r '.[] | {msg: .message, url: .url} | @base64' | while read row; do
             _jq() { echo "$row" | base64 --decode | jq -r "$1"; }
             MSG=$(_jq '.msg')
             URL=$(_jq '.url')
             
+            echo ""
+            echo "📝 Commit Message: $MSG"
+            echo "🔗 Commit URL: $URL"
+            
             # Extract unique keys like GW-17, GW-123, etc.
-            for KEY in $(echo "$MSG" | grep -oE 'GW-[0-9]+' | sort -u); do
-              echo "Found key: $KEY in commit. Looking up Notion page..."
+            KEYS=$(echo "$MSG" | grep -oE 'GW-[0-9]+' | sort -u)
+            
+            if [ -z "$KEYS" ]; then
+              echo "⏭️  No GW-* keys found. Skipping this commit."
+              continue
+            fi
+            
+            echo "🎯 Found keys: $KEYS"
+            
+            for KEY in $KEYS; do
+              echo ""
+              echo "----------------------------------------"
+              echo "🔍 Processing Key: $KEY"
+              echo "----------------------------------------"
               
-              # Query database for row where "ID" equals KEY
-              QUERY_PAYLOAD=$(jq -n --arg db "$NOTION_DATABASE_ID" --arg key "$KEY" '{
+              # Query database
+              QUERY_PAYLOAD=$(jq -n --arg key "$KEY" '{
                 "filter": {
                   "property": "ID",
                   "rich_text": { "equals": $key }
@@ -41,42 +83,116 @@ jobs:
                 "page_size": 1
               }')
               
-              PAGE_ID=$(curl -s -X POST "https://api.notion.com/v1/databases/$NOTION_DATABASE_ID/query" \
+              echo "📤 Query Payload:"
+              echo "$QUERY_PAYLOAD" | jq '.'
+              
+              echo "🌐 Querying Notion API..."
+              QUERY_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+                "https://api.notion.com/v1/databases/$NOTION_DATABASE_ID/query" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION" \
                 -H "Content-Type: application/json" \
-                --data "$QUERY_PAYLOAD" | jq -r '.results[0].id // empty')
+                --data "$QUERY_PAYLOAD")
               
-              if [ -z "$PAGE_ID" ] || [ "$PAGE_ID" = "null" ]; then
-                echo "No row found with ID == $KEY. Skipping."
+              HTTP_CODE=$(echo "$QUERY_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+              QUERY_BODY=$(echo "$QUERY_RESPONSE" | sed '/HTTP_CODE:/d')
+              
+              echo "📥 Query Response (HTTP $HTTP_CODE):"
+              echo "$QUERY_BODY" | jq '.'
+              
+              if [ "$HTTP_CODE" != "200" ]; then
+                echo "❌ Query failed with HTTP $HTTP_CODE"
                 continue
               fi
               
-              echo "Updating page $PAGE_ID with commit URL $URL"
+              PAGE_ID=$(echo "$QUERY_BODY" | jq -r '.results[0].id // empty')
               
-              # Read current text
-              CURRENT_TEXT_JSON=$(curl -s -X GET "https://api.notion.com/v1/pages/$PAGE_ID" \
+              if [ -z "$PAGE_ID" ] || [ "$PAGE_ID" = "null" ]; then
+                echo "⚠️  No Notion page found with ID == '$KEY'"
+                echo "💡 Make sure:"
+                echo "   - A row exists in your Notion database"
+                echo "   - The 'ID' property contains exactly: $KEY"
+                echo "   - No extra spaces or different case"
+                continue
+              fi
+              
+              echo "✅ Found Notion Page ID: $PAGE_ID"
+              
+              # Get current page content
+              echo "📖 Reading current page content..."
+              CURRENT_PAGE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X GET \
+                "https://api.notion.com/v1/pages/$PAGE_ID" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION")
               
-              # Build new rich_text array: existing + new link line
-              EXISTING=$(echo "$CURRENT_TEXT_JSON" | jq -c '.properties["Github Commit link"].rich_text // []')
-              NEW_LINE=$(jq -nc --arg u "$URL" '{type:"text", text:{content:$u, link:{url:$u}}}')
-              UPDATED=$(echo "$EXISTING" | jq --argjson n "$NEW_LINE" '. + [$n]')
+              HTTP_CODE=$(echo "$CURRENT_PAGE" | grep "HTTP_CODE:" | cut -d: -f2)
+              PAGE_BODY=$(echo "$CURRENT_PAGE" | sed '/HTTP_CODE:/d')
               
-              # Update property
+              echo "📄 Current Page Properties:"
+              echo "$PAGE_BODY" | jq '.properties'
+              
+              # Extract current "Github Commit link" content
+              EXISTING=$(echo "$PAGE_BODY" | jq -c '.properties["Github Commit link"].rich_text // []')
+              echo "📋 Current 'Github Commit link' content:"
+              echo "$EXISTING" | jq '.'
+              
+              # Create new link entry
+              NEW_LINE=$(jq -nc --arg url "$URL" --arg msg "$MSG" '{
+                type: "text",
+                text: {
+                  content: $msg,
+                  link: { url: $url }
+                }
+              }')
+              
+              # Append with newline separator if content exists
+              if [ "$(echo "$EXISTING" | jq 'length')" -gt 0 ]; then
+                SEPARATOR=$(jq -nc '{ type: "text", text: { content: "\n" } }')
+                UPDATED=$(echo "$EXISTING" | jq --argjson sep "$SEPARATOR" --argjson new "$NEW_LINE" '. + [$sep, $new]')
+              else
+                UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW_LINE" '. + [$new]')
+              fi
+              
+              echo "✏️  New content to be written:"
+              echo "$UPDATED" | jq '.'
+              
+              # Update the page
               UPDATE_PAYLOAD=$(jq -n --argjson rt "$UPDATED" '{
                 "properties": {
                   "Github Commit link": { "rich_text": $rt }
                 }
               }')
               
-              curl -s -X PATCH "https://api.notion.com/v1/pages/$PAGE_ID" \
+              echo "📤 Update Payload:"
+              echo "$UPDATE_PAYLOAD" | jq '.'
+              
+              echo "🌐 Updating Notion page..."
+              UPDATE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PATCH \
+                "https://api.notion.com/v1/pages/$PAGE_ID" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION" \
                 -H "Content-Type: application/json" \
-                --data "$UPDATE_PAYLOAD" >/dev/null
+                --data "$UPDATE_PAYLOAD")
               
-              echo "Updated Notion page."
+              HTTP_CODE=$(echo "$UPDATE_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+              UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | sed '/HTTP_CODE:/d')
+              
+              echo "📥 Update Response (HTTP $HTTP_CODE):"
+              echo "$UPDATE_BODY" | jq '.'
+              
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "✅ Successfully updated Notion page for $KEY"
+                echo "🎉 Check your Notion database - the 'Github Commit link' column should be updated!"
+              else
+                echo "❌ Failed to update page. HTTP $HTTP_CODE"
+                echo "Error details:"
+                echo "$UPDATE_BODY" | jq '.'
+              fi
+              
             done
           done
+          
+          echo ""
+          echo "=========================================="
+          echo "🎉 FINISHED PROCESSING ALL COMMITS"
+          echo "=========================================="
