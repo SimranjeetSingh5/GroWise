@@ -11,21 +11,23 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Get commits payload
+      - name: Get commits payload safely
         id: commits
         run: |
-          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ toJson(github.event.commits) }}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Base64 encode to safely handle quotes/newlines in commit messages
+          COMMITS_BASE64=$(echo '${{ toJson(github.event.commits) }}' | base64 | tr -d '\n')
+          echo "COMMITS_BASE64=$COMMITS_BASE64" >> $GITHUB_ENV
 
       - name: Parse commits and update Notion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_API_VERSION: ${{ secrets.NOTION_API_VERSION || '2022-06-28' }}
-          COMMITS: ${{ steps.commits.outputs.COMMITS }}
         run: |
           set -e
+
+          # Decode commits JSON
+          COMMITS=$(echo "$COMMITS_BASE64" | base64 --decode)
 
           echo "=========================================="
           echo "🔧 CONFIGURATION CHECK"
@@ -33,21 +35,16 @@ jobs:
           echo "API Version: $NOTION_API_VERSION"
           echo "Token configured: $([ -n "$NOTION_TOKEN" ] && echo 'YES' || echo 'NO')"
           echo "=========================================="
-          
-          if [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DATABASE_ID" ]; then
-            echo "❌ ERROR: NOTION_TOKEN or NOTION_DATABASE_ID not set"
-            exit 1
-          fi
+
+          # Debug commits payload
+          echo "📦 COMMITS PAYLOAD"
+          echo "$COMMITS" | jq '.' || echo "⚠️ Warning: COMMITS may be empty"
 
           echo "=========================================="
-          echo "📦 COMMITS PAYLOAD"
-          echo "=========================================="
-          echo "$COMMITS" | jq '.' || echo "⚠️ Warning: COMMITS may be empty or malformed JSON"
-          echo "=========================================="
-          
           echo "🔄 PROCESSING COMMITS"
           echo "=========================================="
 
+          # Loop over commits
           echo "$COMMITS" | jq -r '.[] | {msg: .message, url: .url} | @base64' | while read row; do
             _jq() { echo "$row" | base64 --decode | jq -r "$1"; }
             MSG=$(_jq '.msg')
@@ -70,7 +67,7 @@ jobs:
               echo "🔍 Processing Key: $KEY"
               echo "----------------------------------------"
 
-              echo "🌐 Querying full database..."
+              # Query first 100 rows of database
               QUERY_RESPONSE=$(curl -s -X POST "https://api.notion.com/v1/databases/$NOTION_DATABASE_ID/query" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION" \
@@ -79,8 +76,8 @@ jobs:
 
               PAGE_ID=""
               RESULTS=$(echo "$QUERY_RESPONSE" | jq -c '.results[]')
-              
-              # Loop over all pages to find matching property
+
+              # Loop over pages to find matching key
               for PAGE in $RESULTS; do
                 PAGE_KEY=$(echo "$PAGE" | jq -r '.properties["ID"].rich_text[0].plain_text // empty')
                 if [ "$PAGE_KEY" = "$KEY" ]; then
