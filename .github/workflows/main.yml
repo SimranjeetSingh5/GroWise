@@ -15,22 +15,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Save commits payload safely
+      - name: Encode commits payload safely
+        id: save_commits
         run: |
-          # Use printf to preserve all characters safely
-          printf '%s' "${{ toJson(github.event.commits) }}" > commits.json
-          echo "Saved commits payload to commits.json"
+          # Base64-encode commits to safely preserve all characters
+          echo "COMMITS_B64=$(echo '${{ toJson(github.event.commits) }}' | base64)" >> $GITHUB_ENV
+          echo "✅ Commits encoded in base64"
 
       - name: Parse commits and update Notion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           NOTION_API_VERSION: ${{ secrets.NOTION_API_VERSION || '2022-06-28' }}
+          COMMITS_B64: ${{ env.COMMITS_B64 }}
         run: |
           set -e
 
-          # Read commits JSON from file
-          COMMITS=$(cat commits.json)
+          # Decode base64 to get valid JSON
+          COMMITS=$(echo "$COMMITS_B64" | base64 --decode)
 
           echo "=========================================="
           echo "🔧 CONFIGURATION CHECK"
@@ -40,14 +42,14 @@ jobs:
           echo "=========================================="
 
           # Debug commits payload
-          echo "📦 COMMITS PAYLOAD"
+          echo "📦 COMMITS PAYLOAD:"
           echo "$COMMITS" | jq '.' || echo "⚠️ Warning: COMMITS may be empty"
 
           echo "=========================================="
           echo "🔄 PROCESSING COMMITS"
           echo "=========================================="
 
-          # Loop over commits
+          # Loop over commits safely
           echo "$COMMITS" | jq -r '.[] | {msg: .message, url: .url} | @base64' | while read row; do
             _jq() { echo "$row" | base64 --decode | jq -r "$1"; }
             MSG=$(_jq '.msg')
