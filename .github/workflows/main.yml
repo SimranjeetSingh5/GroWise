@@ -62,14 +62,14 @@ jobs:
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: '"$NOTION_API_VERSION"'")
               # Build new rich_text array: existing + new link line
-              EXISTING=$(echo "$CURRENT_TEXT_JSON" | jq -c '.properties["github commit link"].rich_text // []')
+              EXISTING=$(echo "$CURRENT_TEXT_JSON" | jq -c '.properties["Github Commit link"].rich_text // []')
               NEW_LINE=$(jq -nc --arg u "$URL" '{type:"text", text:{content:$u, link:{url:$u}}}')
               UPDATED=$(echo "$EXISTING" | jq --argjson n "$NEW_LINE" '. + [$n]')
 
               # 2) Update property
               UPDATE_PAYLOAD=$(jq -n --argjson rt "$UPDATED" '{
                 "properties": {
-                  "github commit link": { "rich_text": $rt }
+                  "Github Commit link": { "rich_text": $rt }
                 }
               }')
 
