@@ -15,9 +15,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Save commits payload to file
+      - name: Save commits payload safely
         run: |
-          echo '${{ toJson(github.event.commits) }}' > commits.json
+          # Use printf to preserve all characters safely
+          printf '%s' "${{ toJson(github.event.commits) }}" > commits.json
           echo "Saved commits payload to commits.json"
 
       - name: Parse commits and update Notion
@@ -28,11 +29,11 @@ jobs:
         run: |
           set -e
 
-          # Read commits from file
+          # Read commits JSON from file
           COMMITS=$(cat commits.json)
 
           echo "=========================================="
-          echo "🔧 CONFIG CHECK"
+          echo "🔧 CONFIGURATION CHECK"
           echo "Database ID: $NOTION_DATABASE_ID"
           echo "API Version: $NOTION_API_VERSION"
           echo "Token configured: $([ -n "$NOTION_TOKEN" ] && echo 'YES' || echo 'NO')"
