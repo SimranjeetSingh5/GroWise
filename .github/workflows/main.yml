@@ -15,7 +15,7 @@ jobs:
         id: commits
         run: |
           echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
-          echo '${{ toJson(github.event.commits) }}' >> $GITHUB_OUTPUT
+          echo "${{ toJson(github.event.commits) }}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Parse commits and update Notion
@@ -40,10 +40,14 @@ jobs:
           fi
 
           echo "=========================================="
+          echo "📦 COMMITS PAYLOAD"
+          echo "=========================================="
+          echo "$COMMITS" | jq '.' || echo "⚠️ Warning: COMMITS may be empty or malformed JSON"
+          echo "=========================================="
+          
           echo "🔄 PROCESSING COMMITS"
           echo "=========================================="
 
-          # Loop over commits
           echo "$COMMITS" | jq -r '.[] | {msg: .message, url: .url} | @base64' | while read row; do
             _jq() { echo "$row" | base64 --decode | jq -r "$1"; }
             MSG=$(_jq '.msg')
