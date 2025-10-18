@@ -1,6 +1,5 @@
 package com.simranjeet.growise
 
-import TodoItem
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -23,11 +22,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.simranjeet.growise.data.model.TodoItem
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-//todo->Checking notion and github integration
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +77,7 @@ fun TodoList() {
                 CircularProgressIndicator()
             }
         }
+
         errorMessage != null -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -89,6 +90,7 @@ fun TodoList() {
                 )
             }
         }
+
         items.isEmpty() -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -97,14 +99,15 @@ fun TodoList() {
                 Text("No todos found")
             }
         }
+
         else -> {
             LazyColumn {
                 items(
                     items = items,
-                    key = { item -> item.id }
+                    key = { item -> item.id!! }
                 ) { item ->
                     Text(
-                        text = item.name,
+                        text = item.title,
                         modifier = Modifier.padding(8.dp)
                     )
                 }

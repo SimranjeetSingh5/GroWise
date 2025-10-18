@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "GroWise"
-include(":app")
+include ':app'
