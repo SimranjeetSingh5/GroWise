@@ -1,8 +1,10 @@
 name: Update Notion with commit links
+
 on:
   push:
     branches:
       - "**"
+
 jobs:
   update-notion:
     runs-on: ubuntu-latest
@@ -15,131 +17,57 @@ jobs:
           echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
           echo '${{ toJson(github.event.commits) }}' >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
       - name: Parse commits and update Notion
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          NOTION_API_VERSION: ${{ secrets.NOTION_API_VERSION || '2022-06-28' }}
+          NOTION_API_VERSION: ${{ secrets.NOTION_API_VERSION }}
           COMMITS: ${{ steps.commits.outputs.COMMITS }}
         run: |
           set -e
-          
-          echo "=========================================="
-          echo "🔧 CONFIGURATION CHECK"
-          echo "=========================================="
-          echo "Database ID: $NOTION_DATABASE_ID"
-          echo "API Version: $NOTION_API_VERSION"
-          echo "Token configured: $([ -n "$NOTION_TOKEN" ] && echo 'YES' || echo 'NO')"
-          echo ""
-          
-          # Validate required secrets
-          if [ -z "$NOTION_TOKEN" ] || [ -z "$NOTION_DATABASE_ID" ]; then
-            echo "❌ ERROR: NOTION_TOKEN or NOTION_DATABASE_ID not set"
-            exit 1
-          fi
-          
-          echo "=========================================="
-          echo "📦 COMMITS PAYLOAD"
-          echo "=========================================="
-          echo "$COMMITS" | jq '.'
-          echo ""
-          
-          echo "=========================================="
-          echo "🔄 PROCESSING COMMITS"
-          echo "=========================================="
-          
+          NOTION_API_VERSION=${NOTION_API_VERSION:-2022-06-28}
+
           echo "$COMMITS" | jq -r '.[] | {msg: .message, url: .url} | @base64' | while read row; do
             _jq() { echo "$row" | base64 --decode | jq -r "$1"; }
             MSG=$(_jq '.msg')
             URL=$(_jq '.url')
-            
-            echo ""
-            echo "📝 Commit Message: $MSG"
-            echo "🔗 Commit URL: $URL"
-            
-            KEYS=$(echo "$MSG" | grep -oE 'GW-[0-9]+' | sort -u)
-            if [ -z "$KEYS" ]; then
-              echo "⏭️  No GW-* keys found. Skipping this commit."
-              continue
-            fi
-            
-            echo "🎯 Found keys: $KEYS"
-            
-            for KEY in $KEYS; do
-              echo ""
-              echo "----------------------------------------"
-              echo "🔍 Processing Key: $KEY"
-              echo "----------------------------------------"
-              
-              # Query database
-              QUERY_RESPONSE=$(curl -s -X POST "https://api.notion.com/v1/databases/$NOTION_DATABASE_ID/query" \
+
+            # Find all GW-* IDs in commit message
+            for KEY in $(echo "$MSG" | grep -oE 'GW-[0-9]+' | sort -u); do
+              # Direct Notion API filter for exact ID match
+              QUERY_PAYLOAD=$(jq -n --arg key "$KEY" '{
+                filter: { property: "ID", rich_text: { equals: $key } },
+                page_size: 1
+              }')
+
+              PAGE_ID=$(curl -s -X POST "https://api.notion.com/v1/databases/$NOTION_DATABASE_ID/query" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION" \
                 -H "Content-Type: application/json" \
-                --data '{"page_size":100}')
+                --data "$QUERY_PAYLOAD" | jq -r '.results[0].id // empty')
 
-              PAGE_ID=""
-              RESULTS=$(echo "$QUERY_RESPONSE" | jq -c '.results[]')
-              
-              # Autodetect ID property type
-              for PAGE in $RESULTS; do
-                ID_PROP=$(echo "$PAGE" | jq -c '.properties["ID"]')
-                ID_VALUE=$(echo "$ID_PROP" | jq -r '.rich_text[0].plain_text? // empty')
-                if [ -z "$ID_VALUE" ]; then
-                  ID_VALUE=$(echo "$ID_PROP" | jq -r '.number? // empty')
-                fi
-                if [ -z "$ID_VALUE" ]; then
-                  ID_VALUE=$(echo "$ID_PROP" | jq -r '.formula.string? // empty')
-                fi
-                if [ "$ID_VALUE" = "$KEY" ]; then
-                  PAGE_ID=$(echo "$PAGE" | jq -r '.id')
-                  break
-                fi
-              done
-              
-              if [ -z "$PAGE_ID" ]; then
-                echo "⚠️  No Notion page found with ID == '$KEY'"
-                continue
-              fi
-              
-              echo "✅ Found Notion Page ID: $PAGE_ID"
-              
-              # Get current page content
+              [ -z "$PAGE_ID" ] && continue
+
               CURRENT_PAGE=$(curl -s -X GET "https://api.notion.com/v1/pages/$PAGE_ID" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION")
-              
               EXISTING=$(echo "$CURRENT_PAGE" | jq -c '.properties["Github Commit link"].rich_text // []')
-              
-              # Create new link entry
+
               NEW_LINE=$(jq -nc --arg url "$URL" --arg msg "$MSG" '{
                 type: "text",
                 text: { content: $msg, link: { url: $url } }
               }')
-              
-              if [ "$(echo "$EXISTING" | jq 'length')" -gt 0 ]; then
-                SEPARATOR=$(jq -nc '{ type: "text", text: { content: "\n" } }')
-                UPDATED=$(echo "$EXISTING" | jq --argjson sep "$SEPARATOR" --argjson new "$NEW_LINE" '. + [$sep, $new]')
-              else
-                UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW_LINE" '. + [$new]')
-              fi
-              
+              UPDATED=$(echo "$EXISTING" | jq --argjson new "$NEW_LINE" '. + [$new]')
+
               UPDATE_PAYLOAD=$(jq -n --argjson rt "$UPDATED" '{
-                "properties": { "Github Commit link": { "rich_text": $rt } }
+                properties: { "Github Commit link": { rich_text: $rt } }
               }')
-              
+
               curl -s -X PATCH "https://api.notion.com/v1/pages/$PAGE_ID" \
                 -H "Authorization: Bearer $NOTION_TOKEN" \
                 -H "Notion-Version: $NOTION_API_VERSION" \
                 -H "Content-Type: application/json" \
-                --data "$UPDATE_PAYLOAD" >/dev/null
-              
-              echo "✅ Updated Notion page for $KEY"
+                --data "$UPDATE_PAYLOAD"
             done
           done
-          
-          echo ""
-          echo "=========================================="
-          echo "🎉 FINISHED PROCESSING ALL COMMITS"
-          echo "=========================================="
