@@ -15,11 +15,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GroWise">
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.ui.activities.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.GroWise" />
         <activity
-            android:name=".SignupActivity"
+            android:name=".presentation.ui.activities.SignupActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.GroWise">

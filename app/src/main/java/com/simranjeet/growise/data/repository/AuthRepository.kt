@@ -6,9 +6,11 @@ import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.simranjeet.growise.BuildConfig
-import com.simranjeet.growise.SupabaseClient
+import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.di.DIContainer
+import io.github.jan.supabase.exceptions.HttpRequestException
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
@@ -18,30 +20,45 @@ import java.util.UUID
 
 class AuthRepository(private val supabaseClient: SupabaseClient) {
 
-    suspend fun signUpWithEmail(email: String, password: String): AuthResponse {
-        return try {
+    suspend fun signUpWithEmail(email: String, password: String) {
+         try {
             supabaseClient.client.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
             }
             AuthResponse.Success
         } catch (e: Exception) {
-            AuthResponse.Error(e.localizedMessage)
+            throw IllegalArgumentException(e.localizedMessage)
         }
     }
 
-    suspend fun signInWithEmail(email: String, password: String): AuthResponse {
-        return try {
+    suspend fun signInWithEmail(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            throw IllegalArgumentException("Email and password cannot be empty.")
+        }
+
+        try {
             supabaseClient.client.auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
-            AuthResponse.Success
+
+            val currentUser = supabaseClient.client.auth.currentUserOrNull()
+                ?: throw IllegalStateException("Authentication failed.")
+
+            if (currentUser.confirmedAt == null) {
+                supabaseClient.client.auth.signOut()
+                throw IllegalStateException("Please confirm your email before logging in.")
+            }
+
+        } catch (e: RestException) {
+            Log.e("AuthRepository", "Sign in failed", e)
+            throw IllegalArgumentException("Invalid email or password.")
         } catch (e: Exception) {
-            AuthResponse.Error(e.localizedMessage)
+            Log.e("AuthRepository", "Unexpected error", e)
+            throw e
         }
     }
-
     fun createNonce(): String {
         val rawNonce = UUID.randomUUID().toString()
         val bytes = rawNonce.toByteArray()
@@ -53,7 +70,7 @@ class AuthRepository(private val supabaseClient: SupabaseClient) {
         }
     }
 
-    suspend fun loginGoogleUser(): AuthResponse {
+    suspend fun loginGoogleUser(): Unit {
         val hashedNonce = createNonce()
 
         val googleIdOption = GetGoogleIdOption.Builder()
@@ -85,11 +102,10 @@ class AuthRepository(private val supabaseClient: SupabaseClient) {
                 provider = Google
             }
 
-            return AuthResponse.Success
 
         } catch (e: Exception) {
             Log.e("google", e.localizedMessage ?: "")
-            return AuthResponse.Error(e.localizedMessage)
+            throw IllegalArgumentException(e.localizedMessage)
         }
     }
 }

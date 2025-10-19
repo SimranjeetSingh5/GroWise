@@ -1,11 +1,11 @@
-package com.simranjeet.growise
+package com.simranjeet.growise.data.client
 
+import com.simranjeet.growise.BuildConfig
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.storage.Storage
-
 
 object SupabaseClient {
 
@@ -13,10 +13,10 @@ object SupabaseClient {
         supabaseUrl = BuildConfig.SUPABASE_URL,
         supabaseKey = BuildConfig.SUPABASE_KEY
     ) {
-        install(Auth)
-        install(Postgrest)
-        install(Realtime)
-        install(Storage)
+        install(Auth.Companion)
+        install(Postgrest.Companion)
+        install(Realtime.Companion)
+        install(Storage.Companion)
     }
 
     // Quick test to verify configuration

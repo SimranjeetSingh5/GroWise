@@ -1,4 +1,4 @@
-package com.simranjeet.growise.presentation.composables
+package com.simranjeet.growise.presentation.ui.composables
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer

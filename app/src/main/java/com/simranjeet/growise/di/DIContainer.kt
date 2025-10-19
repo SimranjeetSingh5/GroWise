@@ -1,7 +1,7 @@
 package com.simranjeet.growise.di
 
 import android.content.Context
-import com.simranjeet.growise.SupabaseClient
+import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.repository.AuthRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase

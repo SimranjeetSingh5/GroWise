@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
-import com.simranjeet.growise.presentation.auth.AuthViewModel
+import com.simranjeet.growise.presentation.viewmodels.auth.AuthViewModel
 
 class AuthViewModelFactory(
     private val signUpUseCase: SignUpUseCase,

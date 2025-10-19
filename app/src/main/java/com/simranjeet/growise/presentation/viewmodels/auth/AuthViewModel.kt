@@ -1,5 +1,6 @@
-package com.simranjeet.growise.presentation.auth
+package com.simranjeet.growise.presentation.viewmodels.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simranjeet.growise.data.model.AuthResponse
@@ -11,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -22,23 +24,28 @@ class AuthViewModel(
     private var signInJob: Job? = null
     private var googleSignInJob: Job? = null
 
-    private val _authState = MutableStateFlow<Result<AuthResponse>>(Result.Loading)
-    val authState: StateFlow<Result<AuthResponse>> = _authState
+    private val _authState = MutableStateFlow<Result<Unit>?>(null)
+    val authState: StateFlow<Result<Unit>?> = _authState.asStateFlow()
 
+    init {
+        viewModelScope.launch { signInUseCase.resultFlow.collect { result -> _authState.value = result } }
+    }
     fun signUp(email: String, password: String) {
         signUpJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { signUpUseCase.execute(email to password) }
         signUpJob =
             viewModelScope.launch { signUpUseCase.resultFlow.collect { _authState.value = it } }
     }
-
     fun signIn(email: String, password: String) {
-        signInJob?.cancel()
-        viewModelScope.launch(Dispatchers.IO) { signInUseCase.execute(email to password) }
-        signInJob =
-            viewModelScope.launch { signInUseCase.resultFlow.collect { _authState.value = it } }
+        viewModelScope.launch {
+            signInUseCase.execute(email to password)
+        }
     }
 
+
+    fun clearAuthState() {
+        _authState.value = null
+    }
     fun signInWithGoogle() {
         googleSignInJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { googleSignInUseCase.execute() }

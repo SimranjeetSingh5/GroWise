@@ -1,6 +1,7 @@
-package com.simranjeet.growise.presentation.composables
+package com.simranjeet.growise.presentation.ui.composables
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,19 +39,36 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.simranjeet.growise.MainActivity
 import com.simranjeet.growise.di.DIContainer
 import com.simranjeet.growise.domain.usecase.bases.Result
-import com.simranjeet.growise.presentation.auth.AuthViewModel
+import com.simranjeet.growise.presentation.viewmodels.auth.AuthViewModel
 import com.simranjeet.growise.presentation.viewmodelfactory.auth.AuthViewModelFactory
-import com.simranjeet.growise.ui.theme.black
-import com.simranjeet.growise.ui.theme.darkGray
-import com.simranjeet.growise.ui.theme.darkPurple
-import com.simranjeet.growise.ui.theme.purple
+import com.simranjeet.growise.presentation.ui.theme.black
+import com.simranjeet.growise.presentation.ui.theme.darkGray
+import com.simranjeet.growise.presentation.ui.theme.darkPurple
+import com.simranjeet.growise.presentation.ui.theme.purple
 import org.kodein.di.instance
 
+enum class AuthScreen {
+    Signup,
+    Login
+}
+
 @Composable
-fun RegisterScreen() {
+fun AuthNavigator() {
+    var currentScreen by remember { mutableStateOf(AuthScreen.Signup) }
+    when (currentScreen) {
+        AuthScreen.Signup -> {
+            RegisterScreen(onNavigateToLogin = { currentScreen = AuthScreen.Login })
+        }
+        AuthScreen.Login -> {
+            LoginScreen(onNavigateBack = { currentScreen = AuthScreen.Signup })
+        }
+    }
+}
+
+@Composable
+fun RegisterScreen(onNavigateToLogin: () -> Unit) {
     val factory: AuthViewModelFactory by DIContainer.di.instance()
     val viewModel: AuthViewModel = viewModel(factory = factory)
 
@@ -85,19 +103,11 @@ fun RegisterScreen() {
             )
 
             when (authState) {
-                is Result.Loading -> {
-                    Text("Loading...")
-                }
+                is Result.Loading -> {}
 
                 is Result.Success -> {
-                    LaunchedEffect(Unit) {
-                        context.startActivity(
-                            Intent(context, MainActivity::class.java).apply {
-                                flags =
-                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            }
-                        )
-                    }
+                    Toast.makeText(context, "Sign Up Success", Toast.LENGTH_SHORT).show()
+                    LoginScreen(onNavigateToLogin)
                 }
 
                 is Result.Error -> {
@@ -106,6 +116,8 @@ fun RegisterScreen() {
                         color = Color.Red
                     )
                 }
+
+                null -> {}
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -140,6 +152,8 @@ fun RegisterScreen() {
                     },
                     shape = RoundedCornerShape(10.dp),
                     colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         focusedContainerColor = darkGray,
@@ -166,6 +180,8 @@ fun RegisterScreen() {
                     visualTransformation = PasswordVisualTransformation(),
                     shape = RoundedCornerShape(10.dp),
                     colors = TextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         focusedContainerColor = darkGray,
@@ -179,7 +195,7 @@ fun RegisterScreen() {
 
             Button(
                 onClick = { viewModel.signUp(emailValue, passwordValue) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = darkGray),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -188,7 +204,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            TextButton(onClick = { }) {
+            TextButton(onClick =  onNavigateToLogin ) {
                 Text(
                     buildAnnotatedString {
                         withStyle(

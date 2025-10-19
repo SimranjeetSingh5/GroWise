@@ -6,10 +6,10 @@ import com.simranjeet.growise.domain.usecase.bases.UseCaseWithoutParams
 
 class GoogleSignInUseCase(
     private val repository: AuthRepository
-) : UseCaseWithoutParams<AuthResponse>() {
+) : UseCaseWithoutParams<Unit>() {
 
 
-    override suspend fun run(): AuthResponse {
+    override suspend fun run(): Unit {
         return repository.loginGoogleUser()
     }
 }

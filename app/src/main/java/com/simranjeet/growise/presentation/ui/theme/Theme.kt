@@ -1,4 +1,4 @@
-package com.simranjeet.growise.ui.theme
+package com.simranjeet.growise.presentation.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -35,6 +35,7 @@ private val LightColorScheme = lightColorScheme(
 
 val purple = Color(0xFFAF61E2)
 val darkPurple = Color(0xFF2D115A)
+val white = Color(0xFFFFFFFF)
 val black = Color(0xFF010101)
 val darkGray = Color(0xFF1A1A1A)
 
