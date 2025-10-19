@@ -33,7 +33,7 @@ fun GoogleSignInButton(onClick: () -> Unit) {
 
         Text(
             text = "Sign In With Google",
-            color = Color.White,
+            color = Color.Black,
             modifier = Modifier.padding(vertical = 4.dp)
         )
     }

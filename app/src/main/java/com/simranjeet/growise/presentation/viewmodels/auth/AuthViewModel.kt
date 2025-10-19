@@ -1,9 +1,7 @@
 package com.simranjeet.growise.presentation.viewmodels.auth
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase

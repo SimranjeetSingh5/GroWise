@@ -33,8 +33,7 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
-val purple = Color(0xFFAF61E2)
-val darkPurple = Color(0xFF2D115A)
+val primaryColor = Color(0xffe8e2d9)
 val white = Color(0xFFFFFFFF)
 val black = Color(0xFF010101)
 val darkGray = Color(0xFF1A1A1A)

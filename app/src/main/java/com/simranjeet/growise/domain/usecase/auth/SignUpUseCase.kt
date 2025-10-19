@@ -1,7 +1,6 @@
 package com.simranjeet.growise.domain.usecase.auth
 
 
-import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.data.repository.AuthRepository
 import com.simranjeet.growise.domain.usecase.bases.UseCase
 

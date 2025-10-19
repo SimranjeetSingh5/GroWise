@@ -9,7 +9,6 @@ import com.simranjeet.growise.BuildConfig
 import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.di.DIContainer
-import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.Google
