@@ -10,6 +10,7 @@ import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.di.DIContainer
 import io.github.jan.supabase.exceptions.RestException
+import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
@@ -18,6 +19,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 class AuthRepository(private val supabaseClient: SupabaseClient) {
+
 
     suspend fun signUpWithEmail(email: String, password: String) {
          try {
