@@ -67,6 +67,7 @@ fun AuthNavigator() {
         AuthScreen.Signup -> {
             RegisterScreen(onNavigateToLogin = { currentScreen = AuthScreen.Login })
         }
+
         AuthScreen.Login -> {
             LoginScreen(onNavigateBack = { currentScreen = AuthScreen.Signup })
         }
@@ -223,7 +224,10 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
 
             Button(
                 onClick = { viewModel.signUp(emailValue, passwordValue) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = darkGray),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black,
+                    contentColor = darkGray
+                ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -232,7 +236,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            TextButton(onClick =  onNavigateToLogin ) {
+            TextButton(onClick = onNavigateToLogin) {
                 Text(
                     buildAnnotatedString {
                         withStyle(

@@ -9,7 +9,6 @@ import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
 import com.simranjeet.growise.presentation.viewmodelfactory.auth.AuthViewModelFactory
 import org.kodein.di.DI
 import org.kodein.di.bind
-import org.kodein.di.direct
 import org.kodein.di.instance
 import org.kodein.di.provider
 import org.kodein.di.singleton
@@ -17,7 +16,9 @@ import org.kodein.di.singleton
 object DIContainer {
     lateinit var appContext: Context
 
-    fun init(context: Context) { appContext = context.applicationContext }
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
 
     val di = DI {
 

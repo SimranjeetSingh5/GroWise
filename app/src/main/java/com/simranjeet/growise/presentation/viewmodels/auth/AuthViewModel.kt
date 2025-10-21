@@ -26,14 +26,20 @@ class AuthViewModel(
     val authState: StateFlow<Result<Unit>?> = _authState.asStateFlow()
 
     init {
-        viewModelScope.launch { signInUseCase.resultFlow.collect { result -> _authState.value = result } }
+        viewModelScope.launch {
+            signInUseCase.resultFlow.collect { result ->
+                _authState.value = result
+            }
+        }
     }
+
     fun signUp(email: String, password: String) {
         signUpJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { signUpUseCase.execute(email to password) }
         signUpJob =
             viewModelScope.launch { signUpUseCase.resultFlow.collect { _authState.value = it } }
     }
+
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             signInUseCase.execute(email to password)
@@ -44,6 +50,7 @@ class AuthViewModel(
     fun clearAuthState() {
         _authState.value = null
     }
+
     fun signInWithGoogle() {
         googleSignInJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { googleSignInUseCase.execute() }

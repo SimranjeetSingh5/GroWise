@@ -10,7 +10,6 @@ import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.AuthResponse
 import com.simranjeet.growise.di.DIContainer
 import io.github.jan.supabase.exceptions.RestException
-import io.github.jan.supabase.gotrue.SessionStatus
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
@@ -22,7 +21,7 @@ class AuthRepository(private val supabaseClient: SupabaseClient) {
 
 
     suspend fun signUpWithEmail(email: String, password: String) {
-         try {
+        try {
             supabaseClient.client.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
@@ -60,6 +59,7 @@ class AuthRepository(private val supabaseClient: SupabaseClient) {
             throw e
         }
     }
+
     fun createNonce(): String {
         val rawNonce = UUID.randomUUID().toString()
         val bytes = rawNonce.toByteArray()

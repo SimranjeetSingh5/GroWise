@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.simranjeet.growise.presentation.ui.composables.AppRouter
-import com.simranjeet.growise.presentation.ui.composables.AuthNavigator
 import com.simranjeet.growise.presentation.ui.theme.GroWiseTheme
 
 class SignupActivity : ComponentActivity() {

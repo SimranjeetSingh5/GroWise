@@ -16,12 +16,12 @@ import org.kodein.di.direct
 import org.kodein.di.instance
 
 class GrowiseApp : Application() {
-     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     lateinit var isLoggedIn: StateFlow<Boolean>
         private set
 
     private val supabaseClient: SupabaseClient by lazy { DIContainer.di.direct.instance() }
-    val isLoggedInFromCache: Boolean by lazy {  supabaseClient.client.auth.currentSessionOrNull() != null}
+    val isLoggedInFromCache: Boolean by lazy { supabaseClient.client.auth.currentSessionOrNull() != null }
 
 
     override fun onCreate() {
@@ -36,6 +36,7 @@ class GrowiseApp : Application() {
                 initialValue = isLoggedInFromCache
             )
     }
+
     companion object {
         lateinit var instance: GrowiseApp
             private set

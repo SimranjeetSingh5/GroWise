@@ -19,13 +19,13 @@ val Typography = Typography(
         lineHeight = 24.sp,
         letterSpacing = 1.sp
     ),
-            labelLarge = TextStyle(
-            fontFamily = groWiseApp,
-    fontWeight = FontWeight.Medium,
-    fontSize = 14.sp,
-    lineHeight = 20.sp,
-    letterSpacing = 1.sp
-)
+    labelLarge = TextStyle(
+        fontFamily = groWiseApp,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 1.sp
+    )
     /* Other default text styles to override
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,

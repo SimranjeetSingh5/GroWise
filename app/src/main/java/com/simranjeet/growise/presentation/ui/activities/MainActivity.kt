@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.airbnb.lottie.compose.LottieAnimation
@@ -31,6 +29,7 @@ import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.TodoItem
+import com.simranjeet.growise.presentation.ui.composables.MainScreen
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -45,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TodoList()
+                    MainScreen()
                 }
             }
         }
@@ -83,8 +82,8 @@ fun TodoList() {
                 contentAlignment = Alignment.Center
             ) {
                 val composition by rememberLottieComposition(
-                LottieCompositionSpec.Asset("future_tech.lottie")
-            )
+                    LottieCompositionSpec.Asset("future_tech.lottie")
+                )
                 val progress by animateLottieCompositionAsState(
                     composition,
                     iterations = LottieConstants.IterateForever

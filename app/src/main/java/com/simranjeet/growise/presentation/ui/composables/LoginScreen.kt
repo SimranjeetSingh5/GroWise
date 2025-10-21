@@ -80,16 +80,17 @@ fun LoginScreen(onNavigateBack: () -> Unit) {
                 Log.e("LoginScreen", "Error: ${state.message}")
                 Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
             }
+
             Result.Loading -> {}
             is Result.Success<*> -> {
                 Log.d("LoginScreen", "Success - navigating to home")
                 viewModel.clearAuthState()
-                    context.startActivity(
-                        Intent(context, MainActivity::class.java).apply {
-                            flags =
-                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                    )
+                context.startActivity(
+                    Intent(context, MainActivity::class.java).apply {
+                        flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
             }
 
             else -> {}
@@ -102,8 +103,8 @@ fun LoginScreen(onNavigateBack: () -> Unit) {
         contentAlignment = Alignment.TopCenter
     ) {
         val composition by rememberLottieComposition(
-        LottieCompositionSpec.Asset("wavy_lines_background.lottie")
-    )
+            LottieCompositionSpec.Asset("wavy_lines_background.lottie")
+        )
         val progress by animateLottieCompositionAsState(
             composition,
             iterations = LottieConstants.IterateForever
@@ -221,7 +222,10 @@ fun LoginScreen(onNavigateBack: () -> Unit) {
 
             Button(
                 onClick = { viewModel.signIn(emailValue, passwordValue) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = darkGray),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black,
+                    contentColor = darkGray
+                ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
