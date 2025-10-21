@@ -29,7 +29,7 @@ import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.TodoItem
-import com.simranjeet.growise.presentation.ui.composables.MainScreen
+import com.simranjeet.growise.presentation.ui.composables.BottomNavigation
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    BottomNavigation()
                 }
             }
         }
