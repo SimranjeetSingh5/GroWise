@@ -1,8 +1,12 @@
 package com.simranjeet.growise.di
 
 import android.content.Context
+import androidx.room.Room
 import com.simranjeet.growise.data.client.SupabaseClient
+import com.simranjeet.growise.data.dao.TransactionsDao
+import com.simranjeet.growise.data.database.AppDatabase
 import com.simranjeet.growise.data.repository.AuthRepository
+import com.simranjeet.growise.data.repository.UserRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
@@ -22,11 +26,19 @@ object DIContainer {
 
     val di = DI {
 
+
+        // --- Database Layer ---
+        bind<AppDatabase>() with singleton { Room.databaseBuilder(appContext, AppDatabase::class.java, "growise_db").build() }
+
+        bind<TransactionsDao>() with singleton { instance<AppDatabase>().transactionsDao() }
+
+
         // --- Data Layer ---
         bind<SupabaseClient>() with singleton { SupabaseClient }
 
         // --- Domain Layer ---
         bind<AuthRepository>() with singleton { AuthRepository(instance()) }
+        bind<UserRepository>() with singleton { UserRepository(instance(),instance()) }
 
         bind<SignUpUseCase>() with provider { SignUpUseCase(instance()) }
         bind<SignInUseCase>() with provider { SignInUseCase(instance()) }
@@ -37,7 +49,8 @@ object DIContainer {
             AuthViewModelFactory(
                 signUpUseCase = instance(),
                 signInUseCase = instance(),
-                googleSignInUseCase = instance()
+                googleSignInUseCase = instance(),
+                userRepository = instance()
             )
         }
     }

@@ -2,6 +2,7 @@ package com.simranjeet.growise.presentation.ui.activities
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -27,15 +28,19 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.simranjeet.growise.GrowiseApp
 import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.TodoItem
+import com.simranjeet.growise.di.DIContainer
 import com.simranjeet.growise.presentation.ui.composables.BottomNavigation
+import com.simranjeet.growise.presentation.ui.composables.MainScreen
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -44,10 +49,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    BottomNavigation()
+                    MainScreen(onLogoutClicked = { GrowiseApp.instance.signOut()})
                 }
             }
         }
+        Log.e("##", "${GrowiseApp.instance.localUser.value?.email}")
     }
 }
 

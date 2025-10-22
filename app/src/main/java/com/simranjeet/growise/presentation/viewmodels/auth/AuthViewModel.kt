@@ -2,6 +2,9 @@ package com.simranjeet.growise.presentation.viewmodels.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simranjeet.growise.data.model.User
+import com.simranjeet.growise.data.model.UserType
+import com.simranjeet.growise.data.repository.UserRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
@@ -9,14 +12,17 @@ import com.simranjeet.growise.domain.usecase.bases.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
-    private val googleSignInUseCase: GoogleSignInUseCase
+    private val googleSignInUseCase: GoogleSignInUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     private var signUpJob: Job? = null
     private var signInJob: Job? = null
@@ -25,24 +31,29 @@ class AuthViewModel(
     private val _authState = MutableStateFlow<Result<Unit>?>(null)
     val authState: StateFlow<Result<Unit>?> = _authState.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            signInUseCase.resultFlow.collect { result ->
-                _authState.value = result
-            }
-        }
-    }
 
     fun signUp(email: String, password: String) {
         signUpJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { signUpUseCase.execute(email to password) }
         signUpJob =
-            viewModelScope.launch { signUpUseCase.resultFlow.collect { _authState.value = it } }
+            viewModelScope.launch { signUpUseCase.resultFlow.collect {result->
+                _authState.value = result
+                if (result is Result.Success) {
+                    userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+                }
+            } }
     }
 
     fun signIn(email: String, password: String) {
-        viewModelScope.launch {
-            signInUseCase.execute(email to password)
+        signInJob?.cancel()
+        viewModelScope.launch { signInUseCase.execute(email to password) }
+        signInJob = viewModelScope.launch {
+            signInUseCase.resultFlow.collect { result ->
+                _authState.value = result
+                if (result is Result.Success) {
+                    userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+                }
+            }
         }
     }
 
@@ -55,8 +66,11 @@ class AuthViewModel(
         googleSignInJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { googleSignInUseCase.execute() }
         googleSignInJob = viewModelScope.launch {
-            googleSignInUseCase.resultFlow.collect {
-                _authState.value = it
+            googleSignInUseCase.resultFlow.collect {result->
+                _authState.value = result
+                if (result is Result.Success) {
+                    userRepository.syncUserFromSupabase(UserType.GOOGLE)
+                }
             }
         }
     }

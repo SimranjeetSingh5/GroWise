@@ -1,11 +1,13 @@
 package com.simranjeet.growise.presentation.ui.composables
 
+import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -38,9 +43,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.simranjeet.growise.GrowiseApp
 import com.simranjeet.growise.R
+import com.simranjeet.growise.di.DIContainer
+
+@Composable
+fun MainScreen(
+    onLogoutClicked: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+        }
+
+        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+            BottomNavigation()
+        }
+        LogoutButton(
+            onClick = onLogoutClicked,
+            modifier = Modifier
+                .align(Alignment.TopStart) // This is the key
+                .padding(16.dp)
+        )
+    }
+}
+@Composable
+fun LogoutButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Logout",
+            tint = Color.Black
+        )
+    }
+}
 
 @Composable
 fun BottomNavigation() {
@@ -60,6 +110,7 @@ fun BottomNavigation() {
             .padding(bottom = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
+
         TabSlider(
             animationProgress = fabAnimationProgress,
             selectedTab = selectedTab.value,

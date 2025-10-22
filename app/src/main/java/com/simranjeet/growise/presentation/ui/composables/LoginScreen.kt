@@ -168,7 +168,7 @@ fun LoginScreen(onNavigateBack: () -> Unit) {
                     shape = RoundedCornerShape(10.dp),
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.White,
+                        unfocusedTextColor = Color.Black,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         focusedContainerColor = white,
@@ -202,7 +202,7 @@ fun LoginScreen(onNavigateBack: () -> Unit) {
                     shape = RoundedCornerShape(10.dp),
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.White,
+                        unfocusedTextColor = Color.Black,
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         focusedContainerColor = white,
