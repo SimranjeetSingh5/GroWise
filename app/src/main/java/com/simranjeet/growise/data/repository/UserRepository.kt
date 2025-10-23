@@ -13,7 +13,7 @@ class UserRepository(
     private val transactionsDao: TransactionsDao
 ) {
 
-    suspend fun syncUserFromSupabase(userType: UserType= UserType.EMAIL_PASSWORD) {
+    suspend fun syncUserFromSupabase(userType: UserType = UserType.EMAIL_PASSWORD) {
         Log.d("SyncDebug", "Checking for session...")
         val session = supabaseClient.client.auth.currentSessionOrNull()
         if (session == null) {
@@ -32,6 +32,7 @@ class UserRepository(
 
         transactionsDao.insertUser(localUser)
     }
+
     fun getLocalUserFlow(): Flow<User?> = transactionsDao.getUserFlow()
 
 }

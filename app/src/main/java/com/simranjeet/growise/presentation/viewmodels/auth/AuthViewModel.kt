@@ -36,12 +36,14 @@ class AuthViewModel(
         signUpJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { signUpUseCase.execute(email to password) }
         signUpJob =
-            viewModelScope.launch { signUpUseCase.resultFlow.collect {result->
-                _authState.value = result
-                if (result is Result.Success) {
-                    userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+            viewModelScope.launch {
+                signUpUseCase.resultFlow.collect { result ->
+                    _authState.value = result
+                    if (result is Result.Success) {
+                        userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+                    }
                 }
-            } }
+            }
     }
 
     fun signIn(email: String, password: String) {
@@ -66,7 +68,7 @@ class AuthViewModel(
         googleSignInJob?.cancel()
         viewModelScope.launch(Dispatchers.IO) { googleSignInUseCase.execute() }
         googleSignInJob = viewModelScope.launch {
-            googleSignInUseCase.resultFlow.collect {result->
+            googleSignInUseCase.resultFlow.collect { result ->
                 _authState.value = result
                 if (result is Result.Success) {
                     userRepository.syncUserFromSupabase(UserType.GOOGLE)

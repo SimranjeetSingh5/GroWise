@@ -75,6 +75,7 @@ fun MainScreen(
         )
     }
 }
+
 @Composable
 fun LogoutButton(
     modifier: Modifier = Modifier,
@@ -143,7 +144,7 @@ fun TabSlider(
     Box(
         Modifier
             .wrapContentSize()
-            .padding( vertical = 30.dp),
+            .padding(vertical = 30.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
 

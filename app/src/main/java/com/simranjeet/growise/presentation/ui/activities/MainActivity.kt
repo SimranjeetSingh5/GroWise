@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(onLogoutClicked = { GrowiseApp.instance.signOut()})
+                    MainScreen(onLogoutClicked = { GrowiseApp.instance.signOut() })
                 }
             }
         }

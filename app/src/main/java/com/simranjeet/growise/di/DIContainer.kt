@@ -28,7 +28,13 @@ object DIContainer {
 
 
         // --- Database Layer ---
-        bind<AppDatabase>() with singleton { Room.databaseBuilder(appContext, AppDatabase::class.java, "growise_db").build() }
+        bind<AppDatabase>() with singleton {
+            Room.databaseBuilder(
+                appContext,
+                AppDatabase::class.java,
+                "growise_db"
+            ).build()
+        }
 
         bind<TransactionsDao>() with singleton { instance<AppDatabase>().transactionsDao() }
 
@@ -38,7 +44,7 @@ object DIContainer {
 
         // --- Domain Layer ---
         bind<AuthRepository>() with singleton { AuthRepository(instance()) }
-        bind<UserRepository>() with singleton { UserRepository(instance(),instance()) }
+        bind<UserRepository>() with singleton { UserRepository(instance(), instance()) }
 
         bind<SignUpUseCase>() with provider { SignUpUseCase(instance()) }
         bind<SignInUseCase>() with provider { SignInUseCase(instance()) }

@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import com.simranjeet.growise.data.dao.TransactionsDao
 import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.data.model.User
+
 @Database(
     entities = [User::class, TransactionEntity::class],
     version = 1,
