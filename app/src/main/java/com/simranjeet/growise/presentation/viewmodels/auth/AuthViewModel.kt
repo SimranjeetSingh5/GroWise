@@ -2,27 +2,24 @@ package com.simranjeet.growise.presentation.viewmodels.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.simranjeet.growise.data.model.User
 import com.simranjeet.growise.data.model.UserType
-import com.simranjeet.growise.data.repository.UserRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
+import com.simranjeet.growise.domain.usecase.auth.SyncUserUseCase
 import com.simranjeet.growise.domain.usecase.bases.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
     private val googleSignInUseCase: GoogleSignInUseCase,
-    private val userRepository: UserRepository
+    private val syncUserUseCase: SyncUserUseCase
 ) : ViewModel() {
     private var signUpJob: Job? = null
     private var signInJob: Job? = null
@@ -40,7 +37,7 @@ class AuthViewModel(
                 signUpUseCase.resultFlow.collect { result ->
                     _authState.value = result
                     if (result is Result.Success) {
-                        userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+                        syncUserUseCase.execute(UserType.EMAIL_PASSWORD)
                     }
                 }
             }
@@ -53,7 +50,7 @@ class AuthViewModel(
             signInUseCase.resultFlow.collect { result ->
                 _authState.value = result
                 if (result is Result.Success) {
-                    userRepository.syncUserFromSupabase(UserType.EMAIL_PASSWORD)
+                    syncUserUseCase.execute(UserType.EMAIL_PASSWORD)
                 }
             }
         }
@@ -71,7 +68,7 @@ class AuthViewModel(
             googleSignInUseCase.resultFlow.collect { result ->
                 _authState.value = result
                 if (result is Result.Success) {
-                    userRepository.syncUserFromSupabase(UserType.GOOGLE)
+                    syncUserUseCase.execute(UserType.GOOGLE)
                 }
             }
         }

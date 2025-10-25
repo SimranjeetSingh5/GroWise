@@ -1,5 +1,6 @@
 package com.simranjeet.growise.domain.usecase.bases
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
@@ -11,11 +12,13 @@ abstract class UseCaseWithoutParams<out T> {
     suspend fun execute() {
         _resultFlow.emit(Result.Loading)
         try {
-            run().also { _resultFlow.emit(Result.Success(it)) }
+            run().collect { data ->
+                _resultFlow.emit(Result.Success(data))
+            }
         } catch (e: Exception) {
             _resultFlow.emit(Result.Error(e.localizedMessage ?: "Unknown error"))
         }
     }
 
-    protected abstract suspend fun run(): T
+    protected abstract suspend fun run(): Flow<T>
 }

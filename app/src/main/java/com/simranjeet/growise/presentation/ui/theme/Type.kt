@@ -10,7 +10,7 @@ import com.simranjeet.growise.R
 
 // Set of Material typography styles to start with
 
-val groWiseApp: FontFamily = FontFamily(Font(R.font.italiana_regular))
+val groWiseApp: FontFamily = FontFamily(Font(R.font.classy_vogue))
 val Typography = Typography(
     bodyLarge = TextStyle(
         fontFamily = groWiseApp,
