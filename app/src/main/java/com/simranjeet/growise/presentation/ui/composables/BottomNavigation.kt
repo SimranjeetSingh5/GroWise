@@ -1,13 +1,15 @@
 package com.simranjeet.growise.presentation.ui.composables
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,13 +28,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,20 +45,89 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.simranjeet.growise.GrowiseApp
 import com.simranjeet.growise.R
+import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.di.DIContainer
+import com.simranjeet.growise.presentation.viewmodelfactory.transaction.TransactionViewModelFactory
+import com.simranjeet.growise.presentation.viewmodels.transaction.TransactionViewModel
+import org.kodein.di.instance
+import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     onLogoutClicked: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    val localUser by GrowiseApp.instance.localUser.collectAsState()
 
+    val factory: TransactionViewModelFactory by DIContainer.di.instance()
+    val viewModel: TransactionViewModel = viewModel(factory = factory)
+
+    val context = LocalContext.current
+    val selectedTab = remember { mutableIntStateOf(0) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (selectedTab.intValue) {
+            0 -> {
+                // Logout button on top
+                LogoutButton(
+                    onClick = onLogoutClicked,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp)
+                )
+            }
+
+            1 -> {
+                // Money bag screen
+            }
+
+            2 -> {
+                // 👇 Show your AddExpenseScreen here
+                AddExpenseScreen(
+                    onSaveClick = { category, date, amount, notes ->
+                        // Handle save logic
+                        localUser?.let {
+                            viewModel.addTransaction(
+                                TransactionEntity(
+                                    id = UUID.randomUUID().toString(),
+                                    userId = it.id.toString(),
+                                    userEmail = it.email,
+                                    amount = amount,
+                                    category = category,
+                                    subCategory = "",
+                                    note = notes,
+                                    timestamp = date,
+                                    synced = false
+
+                                )
+                            )
+                        }
+                        Toast.makeText(
+                            GrowiseApp.instance,
+                            "Saved: $category, ₹$amount",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onBackClick = { selectedTab.intValue = 0 } // go back to home
+                )
+            }
+
+            3 -> {
+                // Charts screen
+            }
+
+            4 -> {
+                // Bot screen
+            }
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -64,15 +136,14 @@ fun MainScreen(
         ) {
         }
 
+        // Bottom navigation stays constant
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            BottomNavigation()
+            BottomNavigation(
+                selectedTab = selectedTab.intValue,
+                onTabSelected = { tab -> selectedTab.intValue = tab }
+            )
         }
-        LogoutButton(
-            onClick = onLogoutClicked,
-            modifier = Modifier
-                .align(Alignment.TopStart) // This is the key
-                .padding(16.dp)
-        )
+
     }
 }
 
@@ -94,11 +165,12 @@ fun LogoutButton(
 }
 
 @Composable
-fun BottomNavigation() {
+fun BottomNavigation(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
     val isMenuExtended = remember { mutableStateOf(false) }
-    val selectedTab = remember { mutableStateOf(0) }
 
-    // Start animation automatically when screen opens
     LaunchedEffect(Unit) { isMenuExtended.value = true }
 
     val fabAnimationProgress by animateFloatAsState(
@@ -114,8 +186,8 @@ fun BottomNavigation() {
 
         TabSlider(
             animationProgress = fabAnimationProgress,
-            selectedTab = selectedTab.value,
-            onTabSelected = { tab -> selectedTab.value = tab }
+            selectedTab = selectedTab,
+            onTabSelected = onTabSelected
         )
     }
 }
@@ -248,10 +320,10 @@ fun TabItem(
     }
 }
 
-private fun androidx.compose.animation.core.Easing.transform(
+private fun Easing.transform(
     start: Float,
     end: Float,
     fraction: Float
 ): Float {
-    return androidx.compose.ui.util.lerp(start, end, this.transform(fraction))
+    return lerp(start, end, this.transform(fraction))
 }

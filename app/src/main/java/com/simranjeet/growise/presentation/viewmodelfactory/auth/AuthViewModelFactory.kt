@@ -2,17 +2,17 @@ package com.simranjeet.growise.presentation.viewmodelfactory.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.simranjeet.growise.data.repository.UserRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
+import com.simranjeet.growise.domain.usecase.auth.SyncUserUseCase
 import com.simranjeet.growise.presentation.viewmodels.auth.AuthViewModel
 
 class AuthViewModelFactory(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
     private val googleSignInUseCase: GoogleSignInUseCase,
-    private val userRepository: UserRepository
+    private val syncUserUseCase: SyncUserUseCase
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -22,7 +22,7 @@ class AuthViewModelFactory(
                 signUpUseCase,
                 signInUseCase,
                 googleSignInUseCase,
-                userRepository
+                syncUserUseCase
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: $modelClass")

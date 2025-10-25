@@ -8,7 +8,7 @@ import com.simranjeet.growise.data.model.User
 
 @Database(
     entities = [User::class, TransactionEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

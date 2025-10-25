@@ -2,8 +2,6 @@ package com.simranjeet.growise
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewModelScope
 import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.model.User
 import com.simranjeet.growise.data.repository.UserRepository
@@ -15,14 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.kodein.di.direct
 import org.kodein.di.instance
-import kotlin.math.log
 
 class GrowiseApp : Application() {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)

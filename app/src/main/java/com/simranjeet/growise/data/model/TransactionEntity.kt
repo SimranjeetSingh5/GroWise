@@ -19,11 +19,11 @@ data class TransactionEntity(
     @PrimaryKey val id: String,
     val userEmail: String,               // foreign key referencing User.email
     val userId: String,
-    val amount: Double,
+    val amount: String,
     val currency: String = "INR",
     val category: String,
     val subCategory: String?,
     val note: String?,
-    val timestamp: Long,
+    val timestamp: String,
     val synced: Boolean = false
 )
