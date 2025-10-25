@@ -26,7 +26,7 @@ class UserRepository(
         val email = user?.email ?: return
         val localUser = User(
             email = email,
-            name = email.substringBefore("@"),
+            name = "name",
             loggedInVia = userType
         )
 

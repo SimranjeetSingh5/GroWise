@@ -6,16 +6,11 @@ import com.simranjeet.growise.data.client.SupabaseClient
 import com.simranjeet.growise.data.dao.TransactionsDao
 import com.simranjeet.growise.data.database.AppDatabase
 import com.simranjeet.growise.data.repository.AuthRepository
-import com.simranjeet.growise.data.repository.TransactionRepository
 import com.simranjeet.growise.data.repository.UserRepository
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
-import com.simranjeet.growise.domain.usecase.auth.SyncUserUseCase
-import com.simranjeet.growise.domain.usecase.transaction.AddOrUpdateTransactionUseCase
-import com.simranjeet.growise.domain.usecase.transaction.FetchAllTransactionsUseCase
 import com.simranjeet.growise.presentation.viewmodelfactory.auth.AuthViewModelFactory
-import com.simranjeet.growise.presentation.viewmodelfactory.transaction.TransactionViewModelFactory
 import org.kodein.di.DI
 import org.kodein.di.bind
 import org.kodein.di.instance
@@ -38,8 +33,7 @@ object DIContainer {
                 appContext,
                 AppDatabase::class.java,
                 "growise_db"
-            ).fallbackToDestructiveMigration()//todo->Remove in production app
-                .build()
+            ).build()
         }
 
         bind<TransactionsDao>() with singleton { instance<AppDatabase>().transactionsDao() }
@@ -51,26 +45,18 @@ object DIContainer {
         // --- Domain Layer ---
         bind<AuthRepository>() with singleton { AuthRepository(instance()) }
         bind<UserRepository>() with singleton { UserRepository(instance(), instance()) }
-        bind<TransactionRepository>() with singleton { TransactionRepository(instance()) }
 
-
-        //Auth
         bind<SignUpUseCase>() with provider { SignUpUseCase(instance()) }
         bind<SignInUseCase>() with provider { SignInUseCase(instance()) }
         bind<GoogleSignInUseCase>() with provider { GoogleSignInUseCase(instance()) }
-        bind<SyncUserUseCase>() with provider { SyncUserUseCase(instance()) }
-
-        //Transaction
-        bind<AddOrUpdateTransactionUseCase>() with provider { AddOrUpdateTransactionUseCase(instance()) }
-        bind<FetchAllTransactionsUseCase>() with provider { FetchAllTransactionsUseCase(instance()) }
 
         // Bind factory
         bind<AuthViewModelFactory>() with singleton {
-            AuthViewModelFactory(instance(), instance(), instance(), instance()
-            )
-        }
-        bind<TransactionViewModelFactory>() with singleton {
-            TransactionViewModelFactory(instance(), instance(),
+            AuthViewModelFactory(
+                signUpUseCase = instance(),
+                signInUseCase = instance(),
+                googleSignInUseCase = instance(),
+                userRepository = instance()
             )
         }
     }

@@ -71,7 +71,7 @@ class AuthRepository(private val supabaseClient: SupabaseClient) {
         }
     }
 
-    suspend fun loginGoogleUser() {
+    suspend fun loginGoogleUser(): Unit {
         val hashedNonce = createNonce()
 
         val googleIdOption = GetGoogleIdOption.Builder()

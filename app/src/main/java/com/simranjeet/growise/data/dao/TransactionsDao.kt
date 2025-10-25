@@ -1,11 +1,6 @@
 package com.simranjeet.growise.data.dao
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Transaction
+import androidx.room.*
 import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.data.model.User
 import com.simranjeet.growise.data.model.UserWithTransactions
@@ -37,8 +32,8 @@ interface TransactionsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransactions(transactions: List<TransactionEntity>)
 
-    @Query("SELECT * FROM transactions WHERE userEmail = :userEmail")
-    fun getTransactionsForUserFlow(userEmail: String): Flow<List<TransactionEntity>>
+    @Query("SELECT * FROM transactions WHERE userId = :userId")
+    fun getTransactionsForUserFlow(userId: String): Flow<List<TransactionEntity>>
 
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
