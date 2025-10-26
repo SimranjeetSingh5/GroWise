@@ -1,8 +1,6 @@
 package com.simranjeet.growise.presentation.ui.composables
 
-import android.os.Build
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -60,7 +58,11 @@ import com.simranjeet.growise.presentation.viewmodels.transaction.TransactionVie
 import org.kodein.di.instance
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
+enum class Screen {
+    AddExpense,
+    ExpenseList
+}
+
 @Composable
 fun MainScreen(
     onLogoutClicked: () -> Unit
@@ -72,7 +74,6 @@ fun MainScreen(
 
     val context = LocalContext.current
     val selectedTab = remember { mutableIntStateOf(0) }
-
     Box(modifier = Modifier.fillMaxSize()) {
         when (selectedTab.intValue) {
             0 -> {
@@ -91,33 +92,45 @@ fun MainScreen(
 
             2 -> {
                 // 👇 Show your AddExpenseScreen here
-                AddExpenseScreen(
-                    onSaveClick = { category, date, amount, notes ->
-                        // Handle save logic
-                        localUser?.let {
-                            viewModel.addTransaction(
-                                TransactionEntity(
-                                    id = UUID.randomUUID().toString(),
-                                    userId = it.id.toString(),
-                                    userEmail = it.email,
-                                    amount = amount,
-                                    category = category,
-                                    subCategory = "",
-                                    note = notes,
-                                    timestamp = date,
-                                    synced = false
 
-                                )
-                            )
-                        }
-                        Toast.makeText(
-                            GrowiseApp.instance,
-                            "Saved: $category, ₹$amount",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onBackClick = { selectedTab.intValue = 0 } // go back to home
-                )
+                val (currentScreen, setCurrentScreen) = remember { mutableStateOf(Screen.AddExpense) }
+                when (currentScreen) {
+                    Screen.AddExpense -> {
+                        AddExpenseScreen(
+                            onSaveClick = { category, date, amount, notes ->
+                                // Handle save logic
+                                localUser?.let {
+                                    viewModel.addTransaction(
+                                        TransactionEntity(
+                                            id = UUID.randomUUID().toString(),
+                                            userEmail = it.email,
+                                            amount = amount,
+                                            category = category,
+                                            subCategory = "",
+                                            note = notes,
+                                            timestamp = date,
+                                            synced = false
+
+                                        )
+                                    )
+                                }
+                                Toast.makeText(
+                                    GrowiseApp.instance,
+                                    "Saved: $category, ₹$amount",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            onBackClick = { selectedTab.intValue = 0 }, // go back to home
+                            onShowListClick = { setCurrentScreen(Screen.ExpenseList) }
+                        )
+                    }
+
+                    Screen.ExpenseList -> {
+                        ExpenseListScreen(
+                            onBackClick = { setCurrentScreen(Screen.AddExpense) } // Go back to the previous screen
+                        )
+                    }
+                }
             }
 
             3 -> {

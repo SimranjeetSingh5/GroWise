@@ -21,6 +21,10 @@ import org.kodein.di.instance
 
 class GrowiseApp : Application() {
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private val supabaseClient: SupabaseClient by lazy { DIContainer.di.direct.instance() }
+    private val userRepo: UserRepository by lazy { DIContainer.di.direct.instance() }
+
     val isLoggedIn: StateFlow<Boolean> by lazy {
         val initialValue = supabaseClient.client.auth.currentSessionOrNull() != null
 
@@ -33,36 +37,56 @@ class GrowiseApp : Application() {
             )
     }
 
-    private val supabaseClient: SupabaseClient by lazy { DIContainer.di.direct.instance() }
-    private val userRepo: UserRepository by lazy { DIContainer.di.direct.instance() }
-    val isLoggedInFromCache: Boolean by lazy { supabaseClient.client.auth.currentSessionOrNull() != null }
-
-
     val localUser: StateFlow<User?> by lazy {
         userRepo.getLocalUserFlow()
             .stateIn(
                 scope = applicationScope,
-                started = SharingStarted.WhileSubscribed(5_000),
+                started = SharingStarted.Lazily,  // Changed to Lazily to avoid premature query
                 initialValue = null
             )
     }
 
     override fun onCreate() {
         super.onCreate()
-        DIContainer.init(this)
         instance = this
+        DIContainer.init(this)
+
+        // Sync user BEFORE anything else accesses localUser
         applicationScope.launch {
-            isLoggedIn.collect { state ->
-                if (state || isLoggedInFromCache) {
+            val currentSession = supabaseClient.client.auth.currentSessionOrNull()
+            if (currentSession != null) {
+                try {
+                    Log.d("GrowiseApp", "Syncing user on app start...")
                     userRepo.syncUserFromSupabase()
-                    Log.d("${this::class.simpleName}", "User synced from Supabase to Room")
+                    Log.d("GrowiseApp", "User synced successfully")
+                } catch (e: Exception) {
+                    Log.e("GrowiseApp", "Failed to sync user: ${e.message}", e)
+                }
+            }
+        }
+
+        // Then monitor for login state changes
+        applicationScope.launch {
+            isLoggedIn.collect { isAuthenticated ->
+                if (isAuthenticated) {
+                    try {
+                        userRepo.syncUserFromSupabase()
+                        Log.d("GrowiseApp", "User synced after login state change")
+                    } catch (e: Exception) {
+                        Log.e("GrowiseApp", "Failed to sync user: ${e.message}", e)
+                    }
                 }
             }
         }
     }
 
-    fun signOut() = applicationScope.launch { supabaseClient.client.auth.signOut() }
+    fun signOut() {
+        applicationScope.launch(Dispatchers.IO) {
+            supabaseClient.client.auth.signOut()
+            userRepo.deleteCurrentUser()
+        }
 
+    }
 
     companion object {
         lateinit var instance: GrowiseApp

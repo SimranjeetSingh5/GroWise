@@ -1,17 +1,14 @@
 package com.simranjeet.growise.data.model
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 
 
 @Entity(
-    tableName = "user",
-    indices = [Index(value = ["email"], unique = true)]
+    tableName = "user"
 )
 data class User(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
+    @PrimaryKey
     val email: String,
     val name: String,
     val loggedInVia: UserType = UserType.EMAIL_PASSWORD

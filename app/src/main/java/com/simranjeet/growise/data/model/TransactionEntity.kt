@@ -2,6 +2,7 @@ package com.simranjeet.growise.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -13,12 +14,12 @@ import androidx.room.PrimaryKey
             childColumns = ["userEmail"],
             onDelete = ForeignKey.CASCADE
         )
-    ]
+    ],
+    indices = [Index(value = ["userEmail"])]
 )
 data class TransactionEntity(
     @PrimaryKey val id: String,
     val userEmail: String,               // foreign key referencing User.email
-    val userId: String,
     val amount: String,
     val currency: String = "INR",
     val category: String,

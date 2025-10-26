@@ -2,11 +2,9 @@ package com.simranjeet.growise.presentation.viewmodels.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.simranjeet.growise.data.model.UserType
 import com.simranjeet.growise.domain.usecase.auth.GoogleSignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
-import com.simranjeet.growise.domain.usecase.auth.SyncUserUseCase
 import com.simranjeet.growise.domain.usecase.bases.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -18,8 +16,7 @@ import kotlinx.coroutines.launch
 class AuthViewModel(
     private val signUpUseCase: SignUpUseCase,
     private val signInUseCase: SignInUseCase,
-    private val googleSignInUseCase: GoogleSignInUseCase,
-    private val syncUserUseCase: SyncUserUseCase
+    private val googleSignInUseCase: GoogleSignInUseCase
 ) : ViewModel() {
     private var signUpJob: Job? = null
     private var signInJob: Job? = null
@@ -36,9 +33,7 @@ class AuthViewModel(
             viewModelScope.launch {
                 signUpUseCase.resultFlow.collect { result ->
                     _authState.value = result
-                    if (result is Result.Success) {
-                        syncUserUseCase.execute(UserType.EMAIL_PASSWORD)
-                    }
+
                 }
             }
     }
@@ -49,9 +44,7 @@ class AuthViewModel(
         signInJob = viewModelScope.launch {
             signInUseCase.resultFlow.collect { result ->
                 _authState.value = result
-                if (result is Result.Success) {
-                    syncUserUseCase.execute(UserType.EMAIL_PASSWORD)
-                }
+
             }
         }
     }
@@ -67,9 +60,6 @@ class AuthViewModel(
         googleSignInJob = viewModelScope.launch {
             googleSignInUseCase.resultFlow.collect { result ->
                 _authState.value = result
-                if (result is Result.Success) {
-                    syncUserUseCase.execute(UserType.GOOGLE)
-                }
             }
         }
     }

@@ -4,8 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-abstract class UseCaseWithoutParams<out T> {
-
+abstract class FlowUseCaseWithoutParams<out T> {
     private val _resultFlow = MutableSharedFlow<Result<T>>(replay = 1)
     val resultFlow = _resultFlow.asSharedFlow()
 

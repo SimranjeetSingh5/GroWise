@@ -7,30 +7,11 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.simranjeet.growise.data.model.TransactionEntity
-import com.simranjeet.growise.data.model.User
 import com.simranjeet.growise.data.model.UserWithTransactions
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionsDao {
-
-    // ---------------------------
-    // User operations
-    // ---------------------------
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: User)
-
-    @Query("SELECT * FROM user LIMIT 1")
-    fun getUserFlow(): Flow<User?>
-
-    @Query("DELETE FROM user")
-    suspend fun clearUser()
-
-    // ---------------------------
-    // Transaction operations
-    // ---------------------------
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
 
@@ -42,9 +23,6 @@ interface TransactionsDao {
 
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
-
-    @Query("DELETE FROM transactions WHERE userId = :userId")
-    suspend fun clearTransactionsForUser(userId: String)
 
     // ---------------------------
     // Relationship queries
