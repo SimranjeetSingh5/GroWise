@@ -14,6 +14,7 @@ import com.simranjeet.growise.domain.usecase.auth.SignInUseCase
 import com.simranjeet.growise.domain.usecase.auth.SignUpUseCase
 import com.simranjeet.growise.domain.usecase.transaction.AddOrUpdateTransactionUseCase
 import com.simranjeet.growise.domain.usecase.transaction.FetchAllTransactionsUseCase
+import com.simranjeet.growise.domain.usecase.transaction.FetchTransactionByIdUseCase
 import com.simranjeet.growise.presentation.viewmodelfactory.auth.AuthViewModelFactory
 import com.simranjeet.growise.presentation.viewmodelfactory.transaction.TransactionViewModelFactory
 import org.kodein.di.DI
@@ -71,6 +72,7 @@ object DIContainer {
                 )
             }
             bind<FetchAllTransactionsUseCase>() with provider { FetchAllTransactionsUseCase(instance()) }
+            bind<FetchTransactionByIdUseCase>() with provider { FetchTransactionByIdUseCase(instance()) }
 
             // Bind factory
             bind<AuthViewModelFactory>() with singleton {
@@ -80,7 +82,7 @@ object DIContainer {
             }
             bind<TransactionViewModelFactory>() with singleton {
                 TransactionViewModelFactory(
-                    instance(), instance(),
+                    instance(), instance(), instance(),
                 )
             }
         }

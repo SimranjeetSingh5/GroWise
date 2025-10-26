@@ -6,17 +6,24 @@ import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.domain.usecase.bases.Result
 import com.simranjeet.growise.domain.usecase.transaction.AddOrUpdateTransactionUseCase
 import com.simranjeet.growise.domain.usecase.transaction.FetchAllTransactionsUseCase
+import com.simranjeet.growise.domain.usecase.transaction.FetchTransactionByIdUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class TransactionViewModel(
     private val addTransactionUseCase: AddOrUpdateTransactionUseCase,
-    private val fetchAllTransactionsUseCase: FetchAllTransactionsUseCase
+    private val fetchAllTransactionsUseCase: FetchAllTransactionsUseCase,
+    private val fetchTransactionByIdUseCase: FetchTransactionByIdUseCase
 ) : ViewModel() {
     private val transactionState = MutableSharedFlow<TransactionState>()
     fun getTransactionState(): SharedFlow<TransactionState> = transactionState
+    private val _editTransaction = MutableStateFlow<TransactionEntity?>(null)
+    val editTransaction: StateFlow<TransactionEntity?> = _editTransaction.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -30,7 +37,36 @@ class TransactionViewModel(
         fetchAllTransactionsUseCase.execute()
     }
 
-    fun addTransaction(transaction: TransactionEntity) {
+    fun fetchTransactionById(id: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            fetchTransactionByIdUseCase.execute(id)
+        }
+        viewModelScope.launch {
+            fetchTransactionByIdUseCase.resultFlow.collect { result ->
+                when (result) {
+                    is Result.Success -> {
+                        _editTransaction.value = result.data
+                        transactionState.emit(TransactionState.TransactionLoaded(result.data))
+                    }
+
+                    is Result.Error -> {
+                        transactionState.emit(TransactionState.ShowError(result.message))
+                    }
+
+                    Result.Loading -> {
+                        transactionState.emit(TransactionState.Loading)
+                    }
+                }
+            }
+        }
+    }
+
+
+    fun clearEditTransaction() {
+        _editTransaction.value = null
+    }
+
+    fun addOrUpdateTransaction(transaction: TransactionEntity) {
         viewModelScope.launch(Dispatchers.IO) { addTransactionUseCase.execute(transaction) }
         viewModelScope.launch {
             addTransactionUseCase.resultFlow.collect { result ->
@@ -62,6 +98,8 @@ class TransactionViewModel(
         data object Added : TransactionState()
         data object Empty : TransactionState()
         data class LoadedTransaction(val transaction: List<TransactionEntity>) : TransactionState()
+        data class TransactionLoaded(val transaction: TransactionEntity?) : TransactionState()
+
     }
 
 }

@@ -30,6 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,24 +41,59 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.simranjeet.growise.GrowiseApp
+import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.presentation.ui.theme.GroWiseTheme
 import com.simranjeet.growise.presentation.ui.theme.groWiseApp
 import com.simranjeet.growise.presentation.ui.theme.primaryColor
+import com.simranjeet.growise.presentation.viewmodels.transaction.TransactionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(
-    onSaveClick: (String, String, String, String) -> Unit,
+fun ExpenseScreen(
+    transactionId: String? = null,  // null = add mode, non-null = edit mode
+    viewModel: TransactionViewModel,
+    onSaveClick: (TransactionEntity) -> Unit,
     onBackClick: () -> Unit,
     onShowListClick: () -> Unit
 ) {
+    val localUser by GrowiseApp.instance.localUser.collectAsState()
+
     val categories = listOf("Food", "Travel", "Shopping", "Bills", "Health", "Other")
+    val editTransaction by viewModel.editTransaction.collectAsState()
 
     var selectedCategory by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var transactionIdToEdit by remember { mutableStateOf<String?>(null) }
+
+    // Fetch transaction when transactionId is provided
+    LaunchedEffect(transactionId) {
+        if (transactionId != null) {
+            viewModel.fetchTransactionById(transactionId)
+        } else {
+            viewModel.clearEditTransaction()
+            // Reset form for new expense
+            selectedCategory = ""
+            date = ""
+            amount = ""
+            notes = ""
+            transactionIdToEdit = null
+        }
+    }
+
+    // Pre-fill form when editing
+    LaunchedEffect(editTransaction) {
+        editTransaction?.let { transaction ->
+            transactionIdToEdit = transaction.id
+            selectedCategory = transaction.category
+            date = transaction.timestamp
+            amount = transaction.amount
+            notes = transaction.note ?: ""
+        }
+    }
 
     GroWiseTheme {
         Surface(
@@ -66,7 +103,8 @@ fun AddExpenseScreen(
                 .padding(horizontal = 14.dp, vertical = 16.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .background(primaryColor)
                     .padding(top = 10.dp, bottom = 40.dp)
                     .verticalScroll(rememberScrollState()),
@@ -79,7 +117,10 @@ fun AddExpenseScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Button(
-                            onClick = onBackClick,
+                            onClick = {
+                                viewModel.clearEditTransaction()
+                                onBackClick()
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                             shape = RoundedCornerShape(40.dp),
                             contentPadding = PaddingValues(0.dp),
@@ -101,14 +142,14 @@ fun AddExpenseScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Sharp.List,
-                                contentDescription = "Back",
+                                contentDescription = "List",
                                 tint = Color.Black,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                     }
                     Text(
-                        text = "Add New Expenses",
+                        text = if (transactionIdToEdit != null) "Edit Expense" else "Add New Expense",
                         fontSize = 30.sp,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Medium,
@@ -148,11 +189,7 @@ fun AddExpenseScreen(
                             categories.forEach { category ->
                                 DropdownMenuItem(
                                     modifier = Modifier.background(Color.White),
-                                    text = {
-                                        Text(
-                                            text = category
-                                        )
-                                    },
+                                    text = { Text(text = category) },
                                     onClick = {
                                         selectedCategory = category
                                         expanded = false
@@ -177,11 +214,7 @@ fun AddExpenseScreen(
                     TextField(
                         value = amount,
                         onValueChange = { amount = it },
-                        label = {
-                            Text(
-                                text = "Expense Amount"
-                            )
-                        },
+                        label = { Text(text = "Expense Amount") },
                         singleLine = true,
                         leadingIcon = {
                             Text(
@@ -207,11 +240,7 @@ fun AddExpenseScreen(
                     TextField(
                         value = notes,
                         onValueChange = { notes = it },
-                        label = {
-                            Text(
-                                text = "Take Notes",
-                            )
-                        },
+                        label = { Text(text = "Take Notes") },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -227,7 +256,25 @@ fun AddExpenseScreen(
 
                 // Save Button
                 Button(
-                    onClick = { onSaveClick(selectedCategory, date, amount, notes) },
+                    onClick = {
+                        val userEmail = localUser?.email ?: return@Button
+
+                        val transaction = TransactionEntity(
+                            id = transactionIdToEdit ?: java.util.UUID.randomUUID().toString(),
+                            userEmail = userEmail,
+                            amount = amount,
+                            category = selectedCategory,
+                            subCategory = null,
+                            note = notes.ifBlank { null },
+                            timestamp = date,
+                            synced = false
+                        )
+                        onSaveClick(transaction)
+                    },
+                    enabled = selectedCategory.isNotBlank() &&
+                            date.isNotBlank() &&
+                            amount.isNotBlank() &&
+                            localUser != null,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier
@@ -235,8 +282,9 @@ fun AddExpenseScreen(
                         .height(56.dp)
                 ) {
                     Text(
-                        text = "Save Expense",
-                        color = Color.White, fontSize = 16.sp
+                        text = if (transactionIdToEdit != null) "Update Expense" else "Save Expense",
+                        color = Color.White,
+                        fontSize = 16.sp
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package com.simranjeet.growise.presentation.ui.composables
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,18 +47,18 @@ import com.simranjeet.growise.presentation.viewmodels.transaction.TransactionVie
 import kotlinx.coroutines.flow.collectLatest
 import org.kodein.di.instance
 
-
 @Composable
-
-fun ExpenseListScreen(onBackClick: () -> Unit) {
-
+fun ExpenseListScreen(
+    onBackClick: () -> Unit,
+    onTransactionClick: (String) -> Unit
+) {
     val factory: TransactionViewModelFactory by DIContainer.di.instance()
     val viewModel: TransactionViewModel = viewModel(factory = factory)
     var transactions by remember { mutableStateOf(listOf<TransactionEntity>()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
 
+    LaunchedEffect(Unit) {
         viewModel.fetchAllExpenses()
         viewModel.getTransactionState().collectLatest { state ->
             when (state) {
@@ -90,7 +91,8 @@ fun ExpenseListScreen(onBackClick: () -> Unit) {
                 .padding(horizontal = 14.dp, vertical = 16.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .background(primaryColor)
                     .padding(top = 10.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -137,7 +139,7 @@ fun ExpenseListScreen(onBackClick: () -> Unit) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp), // give fixed height for proper measurement
+                                    .height(200.dp),
                                 contentAlignment = androidx.compose.ui.Alignment.Center
                             ) {
                                 CircularProgressIndicator(color = Color.White)
@@ -167,38 +169,44 @@ fun ExpenseListScreen(onBackClick: () -> Unit) {
                         }
                     }
 
-                    // Transaction items
+                    // Transaction items - MAKE THEM CLICKABLE
                     items(transactions) { transaction ->
-                        TransactionItem(transaction)
+                        TransactionItem(
+                            transaction = transaction,
+                            onClick = { onTransactionClick(transaction.id) }
+                        )
                     }
                 }
             }
         }
-
     }
 }
 
-
 @Composable
-fun TransactionItem(transaction: TransactionEntity) {
+fun TransactionItem(
+    transaction: TransactionEntity,
+    onClick: () -> Unit
+) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
+            .clickable(onClick = onClick),
+        shadowElevation = 2.dp
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = "${transaction.category} - ${transaction.subCategory ?: ""}",
+                text = "${transaction.category}${transaction.subCategory?.let { " - $it" } ?: ""}",
                 fontSize = 18.sp,
-                color = Color.White,
+                color = Color.Black,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = "₹${transaction.amount} ${transaction.currency}",
                 fontSize = 16.sp,
-                color = Color.LightGray
+                color = Color.DarkGray
             )
             transaction.note?.let {
                 Text(

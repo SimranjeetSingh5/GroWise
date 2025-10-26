@@ -23,6 +23,10 @@ class TransactionRepository(
         transactionsDao.insertTransaction(transaction)
     }
 
+    suspend fun getTransactionById(id: String): TransactionEntity? {
+        return transactionsDao.getTransactionById(id)
+    }
+
     suspend fun fetchAllTransactions(email: String): Flow<List<TransactionEntity>> {
         return transactionsDao.getTransactionsForUserFlow(email)
             .onStart { Log.d("## Repo", "Fetching transactions for $email") }

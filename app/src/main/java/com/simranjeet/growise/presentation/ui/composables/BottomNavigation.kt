@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,16 +52,15 @@ import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.simranjeet.growise.GrowiseApp
 import com.simranjeet.growise.R
-import com.simranjeet.growise.data.model.TransactionEntity
 import com.simranjeet.growise.di.DIContainer
 import com.simranjeet.growise.presentation.viewmodelfactory.transaction.TransactionViewModelFactory
 import com.simranjeet.growise.presentation.viewmodels.transaction.TransactionViewModel
 import org.kodein.di.instance
-import java.util.UUID
 
-enum class Screen {
-    AddExpense,
-    ExpenseList
+sealed class Screen {
+    data object AddExpense : Screen()
+    data object ExpenseList : Screen()
+    data class EditExpense(val transactionId: String) : Screen()
 }
 
 @Composable
@@ -68,16 +68,18 @@ fun MainScreen(
     onLogoutClicked: () -> Unit
 ) {
     val localUser by GrowiseApp.instance.localUser.collectAsState()
-
     val factory: TransactionViewModelFactory by DIContainer.di.instance()
     val viewModel: TransactionViewModel = viewModel(factory = factory)
-
     val context = LocalContext.current
     val selectedTab = remember { mutableIntStateOf(0) }
+
+    // Use a state to manage navigation within the expense section
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.AddExpense) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (selectedTab.intValue) {
             0 -> {
-                // Logout button on top
+                // Home screen with logout button
                 LogoutButton(
                     onClick = onLogoutClicked,
                     modifier = Modifier
@@ -91,43 +93,53 @@ fun MainScreen(
             }
 
             2 -> {
-                // 👇 Show your AddExpenseScreen here
-
-                val (currentScreen, setCurrentScreen) = remember { mutableStateOf(Screen.AddExpense) }
-                when (currentScreen) {
+                // Expense management section
+                when (val screen = currentScreen) {
                     Screen.AddExpense -> {
-                        AddExpenseScreen(
-                            onSaveClick = { category, date, amount, notes ->
-                                // Handle save logic
+                        ExpenseScreen(
+                            transactionId = null,
+                            viewModel = viewModel,
+                            onSaveClick = { transaction ->
                                 localUser?.let {
-                                    viewModel.addTransaction(
-                                        TransactionEntity(
-                                            id = UUID.randomUUID().toString(),
-                                            userEmail = it.email,
-                                            amount = amount,
-                                            category = category,
-                                            subCategory = "",
-                                            note = notes,
-                                            timestamp = date,
-                                            synced = false
-
-                                        )
-                                    )
+                                    viewModel.addOrUpdateTransaction(transaction)
+                                    Toast.makeText(
+                                        context,
+                                        "Expense saved: ₹${transaction.amount}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                                Toast.makeText(
-                                    GrowiseApp.instance,
-                                    "Saved: $category, ₹$amount",
-                                    Toast.LENGTH_SHORT
-                                ).show()
                             },
-                            onBackClick = { selectedTab.intValue = 0 }, // go back to home
-                            onShowListClick = { setCurrentScreen(Screen.ExpenseList) }
+                            onBackClick = { selectedTab.intValue = 0 },
+                            onShowListClick = { currentScreen = Screen.ExpenseList }
                         )
                     }
 
                     Screen.ExpenseList -> {
                         ExpenseListScreen(
-                            onBackClick = { setCurrentScreen(Screen.AddExpense) } // Go back to the previous screen
+                            onBackClick = { currentScreen = Screen.AddExpense },
+                            onTransactionClick = { transactionId ->
+                                currentScreen = Screen.EditExpense(transactionId)
+                            }
+                        )
+                    }
+
+                    is Screen.EditExpense -> {
+                        ExpenseScreen(
+                            transactionId = screen.transactionId,
+                            viewModel = viewModel,
+                            onSaveClick = { transaction ->
+                                localUser?.let {
+                                    viewModel.addOrUpdateTransaction(transaction)
+                                    Toast.makeText(
+                                        context,
+                                        "Expense updated: ₹${transaction.amount}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    currentScreen = Screen.ExpenseList
+                                }
+                            },
+                            onBackClick = { currentScreen = Screen.ExpenseList },
+                            onShowListClick = { currentScreen = Screen.ExpenseList }
                         )
                     }
                 }
@@ -141,22 +153,20 @@ fun MainScreen(
                 // Bot screen
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 100.dp),
-            contentAlignment = Alignment.Center
-        ) {
-        }
 
         // Bottom navigation stays constant
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             BottomNavigation(
                 selectedTab = selectedTab.intValue,
-                onTabSelected = { tab -> selectedTab.intValue = tab }
+                onTabSelected = { tab ->
+                    selectedTab.intValue = tab
+                    // Reset to default screen when switching tabs
+                    if (tab == 2) {
+                        currentScreen = Screen.AddExpense
+                    }
+                }
             )
         }
-
     }
 }
 

@@ -18,6 +18,10 @@ interface TransactionsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransactions(transactions: List<TransactionEntity>)
 
+
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    suspend fun getTransactionById(id: String): TransactionEntity?
+
     @Query("SELECT * FROM transactions WHERE userEmail = :userEmail")
     fun getTransactionsForUserFlow(userEmail: String): Flow<List<TransactionEntity>>
 
