@@ -1,6 +1,8 @@
 package com.simranjeet.growise.presentation.ui.composables
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -63,6 +65,7 @@ sealed class Screen {
     data class EditExpense(val transactionId: String) : Screen()
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MainScreen(
     onLogoutClicked: () -> Unit
@@ -146,7 +149,7 @@ fun MainScreen(
             }
 
             3 -> {
-                // Charts screen
+                ExpenseAnalyticsScreen()
             }
 
             4 -> {
