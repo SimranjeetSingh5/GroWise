@@ -19,12 +19,12 @@ import androidx.room.PrimaryKey
 )
 data class TransactionEntity(
     @PrimaryKey val id: String,
-    val userEmail: String,               // foreign key referencing User.email
-    val amount: String,
-    val currency: String = "INR",
+    val userEmail: String,
+    val amount: String,        // ✅ Numeric amount as string
+    val currency: String = "INR",  // New field with default value
     val category: String,
     val subCategory: String?,
-    val note: String?,
+    val note: String?,         // ✅ Text notes
     val timestamp: String,
     val synced: Boolean = false
 )

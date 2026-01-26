@@ -39,7 +39,7 @@ object DIContainer {
                     appContext,
                     AppDatabase::class.java,
                     "growise_db"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
             }
 
             bind<TransactionsDao>() with singleton { instance<AppDatabase>().transactionsDao() }
@@ -71,7 +71,7 @@ object DIContainer {
                     instance()
                 )
             }
-            bind<FetchAllTransactionsUseCase>() with provider { FetchAllTransactionsUseCase(instance()) }
+            bind<FetchAllTransactionsUseCase>() with singleton { FetchAllTransactionsUseCase(instance()) }
             bind<FetchTransactionByIdUseCase>() with provider { FetchTransactionByIdUseCase(instance()) }
 
             // Bind factory

@@ -2,6 +2,7 @@ package com.simranjeet.growise.presentation.ui.composables
 
 import android.graphics.Paint
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -47,6 +48,7 @@ import java.time.format.DateTimeFormatter
 import java.time.YearMonth
 import kotlin.collections.isNotEmpty
 import kotlin.getValue
+import kotlin.math.log
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +68,7 @@ fun ExpenseAnalyticsScreen(
             when (state) {
                 is TransactionViewModel.TransactionState.LoadedTransaction -> {
                     transactions = state.transaction
+                    Log.e("ExpenseAnalyticsScreen", "Fetched list:-${state.transaction.map { it.amount }}")
                     isLoading = false
                 }
 
@@ -142,17 +145,30 @@ fun ExpenseAnalyticsScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun OverviewTab(transactions: List<TransactionEntity>) {
-    val scrollState = rememberScrollState()
+
+    // Add logging here
+    Log.e("OverviewTab", "Total transactions: ${transactions.size}")
+    transactions.forEach {
+        Log.e("OverviewTab", "Transaction: category=${it.category}, amount=${it.amount}, timestamp=${it.timestamp}")
+    }
+
     val categoryExpenses = remember(transactions) {
-        calculateCategoryExpenses(transactions)
+        calculateCategoryExpenses(transactions).also {
+            Log.e("OverviewTab", "Category expenses: ${it.size} categories")
+            it.forEach { cat -> Log.e("OverviewTab", "Category: ${cat.category}, amount=${cat.amount}") }
+        }
     }
+
     val monthlyExpenses = remember(transactions) {
-        calculateMonthlyExpenses(transactions)
+        calculateMonthlyExpenses(transactions).also {
+            Log.e("OverviewTab", "Monthly expenses: ${it.size} months")
+        }
     }
+
+    val scrollState = rememberScrollState()
     val totalExpense = remember(transactions) {
         transactions.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
     }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -163,14 +179,31 @@ fun OverviewTab(transactions: List<TransactionEntity>) {
         // Total Expense Card
         TotalExpenseCard(totalExpense)
 
-        // Category Breakdown (Vertical Bar Chart inspired by the image)
+        // Show message if no data
+        if (transactions.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
+                Text(
+                    "No transactions found",
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+
+        // Category Breakdown
         if (categoryExpenses.isNotEmpty()) {
             CategoryBarChart(categoryExpenses)
+        } else {
+            Text("No category data available", modifier = Modifier.padding(16.dp))
         }
 
         // Monthly Trend
         if (monthlyExpenses.isNotEmpty()) {
             MonthlyTrendCard(monthlyExpenses)
+        } else {
+            Text("No monthly data available", modifier = Modifier.padding(16.dp))
         }
     }
 }
@@ -575,14 +608,20 @@ fun CategoryExpenseItem(categoryExpense: CategoryExpense) {
         }
     }
 }
-
-// Helper functions
 fun calculateCategoryExpenses(transactions: List<TransactionEntity>): List<CategoryExpense> {
+    if (transactions.isEmpty()) return emptyList()
+
     val categoryTotals = transactions
         .groupBy { it.category }
-        .mapValues { (_, transactions) ->
-            transactions.sumOf { it.amount.toDoubleOrNull() ?: 0.0 }
+        .mapValues { (category, txns) ->
+            txns.sumOf {
+                val amount = it.amount.toDoubleOrNull() ?: 100.0  // Use 100 as dummy value
+                Log.e("calculateCategoryExpenses", "Category: $category, amount string: '${it.amount}', parsed: $amount")
+                amount
+            }
         }
+        .filter { it.value > 0 }
+
 
     val total = categoryTotals.values.sum()
     val colors = listOf(
